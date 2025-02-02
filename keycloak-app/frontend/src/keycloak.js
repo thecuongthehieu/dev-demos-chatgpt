@@ -6,4 +6,7 @@ const keycloakClient = new Keycloak({
     clientId: 'frontend-client',
 });
 
+// Store the initialization promise to ensure it's only called once
+keycloakClient.initPromise = keycloakClient.init({ onLoad: 'check-sso' });
+
 export default keycloakClient;

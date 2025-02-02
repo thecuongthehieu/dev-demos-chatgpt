@@ -1,22 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import keycloakClient from './keycloak';
 import axios from 'axios';
 
-function App() {
-    const [keycloak, setKeycloak] = useState(null);
-    const [authenticated, setAuthenticated] = useState(false);
+
+const App = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
 
+
     useEffect(() => {
-        const initKeycloak = async () => {
-            const authenticated = await keycloakClient.init({ onLoad: 'login-required' });
-
-            setKeycloak(keycloakClient);
-            setAuthenticated(authenticated);
-        };
-
-        initKeycloak();
+        keycloakClient.initPromise
+            .then(authenticated => {
+                setIsAuthenticated(authenticated);
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error("Keycloak initialization failed", error);
+                setLoading(false);
+            });
     }, []);
+
+    const login = () => keycloakClient.login();
+    const logout = () => keycloakClient.logout();
 
     const fetchPublicData = async () => {
         const response = await axios.get('http://localhost:8081/public');
@@ -24,10 +30,10 @@ function App() {
     };
 
     const fetchPrivateData = async () => {
-        if (!keycloak) return;
+        if (!keycloakClient) return;
         try {
             const response = await axios.get('http://localhost:8081/private', {
-                headers: { Authorization: `Bearer ${keycloak.token}` },
+                headers: { Authorization: `Bearer ${keycloakClient.token}` },
             });
             setMessage(response.data.message);
         } catch (error) {
@@ -35,25 +41,24 @@ function App() {
         }
     };
 
+    if (loading) return <div>Loading...</div>;
+
     return (
         <div>
-            {keycloak ? (
-                authenticated ? (
-                    <div>
-                        <h1>Welcome {keycloak.tokenParsed.preferred_username}</h1>
-                        <button onClick={fetchPublicData}>Public Data</button>
-                        <button onClick={fetchPrivateData}>Private Data</button>
-                        <button onClick={() => keycloak.logout()}>Logout</button>
-                        <p>{message}</p>
-                    </div>
-                ) : (
-                    <h2>Unable to authenticate!</h2>
-                )
+            <h1>Welcome to webapp</h1>
+            {isAuthenticated ? (
+                <div>
+                    <h3>Welcome, {keycloakClient.tokenParsed?.preferred_username}!</h3>
+                    <button onClick={fetchPublicData}>Public Data</button>
+                    <button onClick={fetchPrivateData}>Private Data</button>
+                    <button onClick={logout}>Logout</button>
+                    <p>{message}</p>
+                </div>
             ) : (
-                <h2>Initializing Keycloak...</h2>
+                <button onClick={login}>Login with Keycloak</button>
             )}
         </div>
     );
-}
+};
 
 export default App;

@@ -2,7 +2,7 @@ from flask import Flask
 from .database.db import init_db
 from .routers.user_routes import user_blueprint
 from .middleware.cors_middleware import CORSMiddleware
-from config import Config
+from app.config import Config
 
 def create_app():
     app = Flask(__name__)

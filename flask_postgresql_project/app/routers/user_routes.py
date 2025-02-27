@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from ..services.user_service import UserService
+from ..schemas.user_schema import UserSchema
 
 user_blueprint = Blueprint('user', __name__)
+user_schema = UserSchema()
 
 @user_blueprint.route('/users', methods=['GET'])
 def get_users():
@@ -15,8 +17,9 @@ def create_user():
         data = request.get_json()
 
         # Validate required fields
-        if not data or 'username' not in data or 'email' not in data:
-            return jsonify({"error": "Missing required fields"}), 400
+        errors = user_schema.validate(data)
+        if errors:
+            return jsonify(errors), 400
 
         # Call the service method to create a user
         user = UserService.create_user(data)

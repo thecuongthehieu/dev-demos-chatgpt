@@ -4,11 +4,12 @@ from ..schemas.user_schema import UserSchema
 
 user_blueprint = Blueprint('user', __name__)
 user_schema = UserSchema()
+users_schema = UserSchema(many=True)
 
 @user_blueprint.route('/users', methods=['GET'])
 def get_users():
     users = UserService.get_all_users()
-    return jsonify([user.to_dict() for user in users])
+    return jsonify(users_schema.dump(users))
 
 @user_blueprint.route('/users', methods=['POST'])
 def create_user():
@@ -25,8 +26,9 @@ def create_user():
         user = UserService.create_user(data)
 
         # Return the created user as JSON
-        return jsonify(user.to_dict()), 201
+        return jsonify(user_schema.dump(user)), 201
 
     except Exception as e:
         # Handle any other unexpected errors
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        print(e)
+        return jsonify({"error": e}), 500
